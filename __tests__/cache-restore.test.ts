@@ -73,6 +73,23 @@ describe('restoreCache', () => {
     expect(infoSpy).toHaveBeenCalledWith('Cache is not found');
   });
 
+  it('should skip caching for Go versions before 1.10 without throwing', async () => {
+    // Arrange
+    hashFilesSpy.mockImplementation(() => Promise.resolve('file_hash'));
+    // Act
+    await cacheRestore.restoreCache(
+      '1.9.7',
+      packageManager,
+      cacheDependencyPath
+    );
+    // Assert
+    expect(infoSpy).toHaveBeenCalledWith(
+      'Dependency caching is not supported for Go versions before 1.10.0. Skipping cache restore.'
+    );
+    expect(getCacheDirectoryPathSpy).not.toHaveBeenCalled();
+    expect(restoreCacheSpy).not.toHaveBeenCalled();
+  });
+
   it('should set output if cache hit is occurred', async () => {
     // Arrange
     hashFilesSpy.mockImplementation(() => Promise.resolve('file_hash'));

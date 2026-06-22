@@ -1,7 +1,14 @@
 import * as cache from '@actions/cache';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import semver from 'semver';
 import {supportedPackageManagers, PackageManagerInfo} from './package-managers';
+
+// Build and dependency caching rely on `go env GOCACHE`/`GOMODCACHE`.
+// GOCACHE was introduced in Go 1.10, so older versions expose neither
+// cache directory and `go env` returns empty output for both. Caching is
+// therefore unsupported (and meaningless) for Go versions before 1.10.
+export const MINIMUM_GO_VERSION_FOR_CACHE = '1.10.0';
 
 export const getCommandOutput = async (toolCommand: string) => {
   let {stdout, stderr, exitCode} = await exec.getExecOutput(
@@ -29,6 +36,31 @@ export const getPackageManagerInfo = async (packageManager: string) => {
   const obtainedPackageManager = supportedPackageManagers[packageManager];
 
   return obtainedPackageManager;
+};
+
+/**
+ * Returns the installed Go version (e.g. "1.9.7") by parsing `go version`.
+ * Example output: "go version go1.9.7 linux/amd64".
+ */
+export const getGoVersion = async (): Promise<string> => {
+  const versionOutput = await getCommandOutput('go version');
+  return versionOutput.split(' ')[2]?.replace('go', '') ?? '';
+};
+
+/**
+ * Determines whether the installed Go version supports build/dependency
+ * caching. Go versions before 1.10 don't expose GOCACHE/GOMODCACHE, so
+ * caching should be skipped for them without emitting warnings.
+ */
+export const isCacheSupported = (goVersion: string): boolean => {
+  const coercedVersion = semver.coerce(goVersion);
+
+  // If the version can't be parsed, don't block caching.
+  if (!coercedVersion) {
+    return true;
+  }
+
+  return semver.gte(coercedVersion, MINIMUM_GO_VERSION_FOR_CACHE);
 };
 
 export const getCacheDirectoryPath = async (
