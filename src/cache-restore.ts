@@ -19,6 +19,7 @@ export const restoreCache = async (
   cacheDependencyPath?: string
 ) => {
   if (!isCacheSupported(versionSpec)) {
+    core.setOutput(Outputs.CacheHit, false);
     core.info(
       `Dependency caching is not supported for Go versions before ${MINIMUM_GO_VERSION_FOR_CACHE}. Skipping cache restore.`
     );

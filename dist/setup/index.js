@@ -51648,6 +51648,7 @@ const constants_1 = __nccwpck_require__(27242);
 const cache_utils_1 = __nccwpck_require__(4673);
 const restoreCache = (versionSpec, packageManager, cacheDependencyPath) => __awaiter(void 0, void 0, void 0, function* () {
     if (!(0, cache_utils_1.isCacheSupported)(versionSpec)) {
+        core.setOutput(constants_1.Outputs.CacheHit, false);
         core.info(`Dependency caching is not supported for Go versions before ${cache_utils_1.MINIMUM_GO_VERSION_FOR_CACHE}. Skipping cache restore.`);
         return;
     }
@@ -51738,9 +51739,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCacheDirectoryPath = exports.isCacheSupported = exports.getGoVersion = exports.getPackageManagerInfo = exports.getCommandOutput = exports.MINIMUM_GO_VERSION_FOR_CACHE = void 0;
 exports.isGhes = isGhes;
@@ -51748,7 +51746,7 @@ exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 const cache = __importStar(__nccwpck_require__(5116));
 const core = __importStar(__nccwpck_require__(37484));
 const exec = __importStar(__nccwpck_require__(95236));
-const semver_1 = __importDefault(__nccwpck_require__(62088));
+const semver = __importStar(__nccwpck_require__(62088));
 const package_managers_1 = __nccwpck_require__(80772);
 // Build and dependency caching rely on `go env GOCACHE`/`GOMODCACHE`.
 // GOCACHE was introduced in Go 1.10, so older versions expose neither cache
@@ -51790,12 +51788,12 @@ exports.getGoVersion = getGoVersion;
  * caching should be skipped for them without emitting warnings.
  */
 const isCacheSupported = (goVersion) => {
-    const coercedVersion = semver_1.default.coerce(goVersion);
+    const coercedVersion = semver.coerce(goVersion);
     // If the version can't be parsed, don't block caching.
     if (!coercedVersion) {
         return true;
     }
-    return semver_1.default.gte(coercedVersion, exports.MINIMUM_GO_VERSION_FOR_CACHE);
+    return semver.gte(coercedVersion, exports.MINIMUM_GO_VERSION_FOR_CACHE);
 };
 exports.isCacheSupported = isCacheSupported;
 const getCacheDirectoryPath = (packageManagerInfo) => __awaiter(void 0, void 0, void 0, function* () {

@@ -1,7 +1,7 @@
 import * as cache from '@actions/cache';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
-import semver from 'semver';
+import * as semver from 'semver';
 import {supportedPackageManagers, PackageManagerInfo} from './package-managers';
 
 // Build and dependency caching rely on `go env GOCACHE`/`GOMODCACHE`.
