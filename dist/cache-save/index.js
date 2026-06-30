@@ -49197,8 +49197,8 @@ const exec = __importStar(__nccwpck_require__(95236));
 const semver_1 = __importDefault(__nccwpck_require__(62088));
 const package_managers_1 = __nccwpck_require__(80772);
 // Build and dependency caching rely on `go env GOCACHE`/`GOMODCACHE`.
-// GOCACHE was introduced in Go 1.10, so older versions expose neither
-// cache directory and `go env` returns empty output for both. Caching is
+// GOCACHE was introduced in Go 1.10, so older versions expose neither cache
+// directory; `go env` returns empty output for both variables. Caching is
 // therefore unsupported (and meaningless) for Go versions before 1.10.
 exports.MINIMUM_GO_VERSION_FOR_CACHE = '1.10.0';
 const getCommandOutput = (toolCommand) => __awaiter(void 0, void 0, void 0, function* () {
@@ -49225,9 +49225,9 @@ exports.getPackageManagerInfo = getPackageManagerInfo;
  * Example output: "go version go1.9.7 linux/amd64".
  */
 const getGoVersion = () => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
     const versionOutput = yield (0, exports.getCommandOutput)('go version');
-    return (_b = (_a = versionOutput.split(' ')[2]) === null || _a === void 0 ? void 0 : _a.replace('go', '')) !== null && _b !== void 0 ? _b : '';
+    const versionToken = versionOutput.split(' ')[2];
+    return (versionToken === null || versionToken === void 0 ? void 0 : versionToken.startsWith('go')) ? versionToken.slice('go'.length) : '';
 });
 exports.getGoVersion = getGoVersion;
 /**
