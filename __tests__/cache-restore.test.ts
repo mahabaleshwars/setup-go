@@ -86,6 +86,7 @@ describe('restoreCache', () => {
     expect(infoSpy).toHaveBeenCalledWith(
       'Dependency caching is not supported for Go versions before 1.10.0. Skipping cache restore.'
     );
+    expect(setOutputSpy).toHaveBeenCalledWith('cache-hit', false);
     expect(getCacheDirectoryPathSpy).not.toHaveBeenCalled();
     expect(restoreCacheSpy).not.toHaveBeenCalled();
   });
