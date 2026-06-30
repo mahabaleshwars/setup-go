@@ -5,8 +5,8 @@ import semver from 'semver';
 import {supportedPackageManagers, PackageManagerInfo} from './package-managers';
 
 // Build and dependency caching rely on `go env GOCACHE`/`GOMODCACHE`.
-// GOCACHE was introduced in Go 1.10, so older versions expose neither
-// cache directory and `go env` returns empty output for both. Caching is
+// GOCACHE was introduced in Go 1.10, so older versions expose neither cache
+// directory; `go env` returns empty output for both variables. Caching is
 // therefore unsupported (and meaningless) for Go versions before 1.10.
 export const MINIMUM_GO_VERSION_FOR_CACHE = '1.10.0';
 
@@ -44,7 +44,8 @@ export const getPackageManagerInfo = async (packageManager: string) => {
  */
 export const getGoVersion = async (): Promise<string> => {
   const versionOutput = await getCommandOutput('go version');
-  return versionOutput.split(' ')[2]?.replace('go', '') ?? '';
+  const versionToken = versionOutput.split(' ')[2];
+  return versionToken?.startsWith('go') ? versionToken.slice('go'.length) : '';
 };
 
 /**
