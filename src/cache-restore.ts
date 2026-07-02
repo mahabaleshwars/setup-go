@@ -6,13 +6,26 @@ import fs from 'fs';
 
 import {State, Outputs} from './constants';
 import {PackageManagerInfo} from './package-managers';
-import {getCacheDirectoryPath, getPackageManagerInfo} from './cache-utils';
+import {
+  getCacheDirectoryPath,
+  getPackageManagerInfo,
+  isCacheSupported,
+  MINIMUM_GO_VERSION_FOR_CACHE
+} from './cache-utils';
 
 export const restoreCache = async (
   versionSpec: string,
   packageManager: string,
   cacheDependencyPath?: string
 ) => {
+  if (!isCacheSupported(versionSpec)) {
+    core.setOutput(Outputs.CacheHit, false);
+    core.info(
+      `Dependency caching is not supported for Go versions before ${MINIMUM_GO_VERSION_FOR_CACHE}. Skipping cache restore.`
+    );
+    return;
+  }
+
   const packageManagerInfo = await getPackageManagerInfo(packageManager);
   const platform = process.env.RUNNER_OS;
   const arch = process.arch;

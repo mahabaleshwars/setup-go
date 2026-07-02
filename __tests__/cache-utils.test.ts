@@ -142,6 +142,44 @@ describe('getCacheDirectoryPath', () => {
   });
 });
 
+describe('getGoVersion', () => {
+  const getExecOutputSpy = jest.spyOn(exec, 'getExecOutput');
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    ['go version go1.9.7 linux/amd64', '1.9.7'],
+    ['go version go1.21.0 darwin/arm64', '1.21.0'],
+    ['go version go1.20 windows/amd64', '1.20']
+  ])('should parse the version from "%s"', async (output, expected) => {
+    getExecOutputSpy.mockImplementation(() => {
+      return Promise.resolve({exitCode: 0, stdout: output, stderr: ''});
+    });
+
+    await expect(cacheUtils.getGoVersion()).resolves.toBe(expected);
+  });
+});
+
+describe('isCacheSupported', () => {
+  it.each([
+    ['1.10.0', true],
+    ['1.10', true],
+    ['1.14.0', true],
+    ['1.21.5', true],
+    ['1.9.7', false],
+    ['1.9', false],
+    ['1.5.4', false]
+  ])('returns %s -> %s', (goVersion, expected) => {
+    expect(cacheUtils.isCacheSupported(goVersion)).toBe(expected);
+  });
+
+  it('returns true when the version cannot be parsed', () => {
+    expect(cacheUtils.isCacheSupported('not-a-version')).toBe(true);
+  });
+});
+
 describe('isCacheFeatureAvailable', () => {
   //Arrange
   const isFeatureAvailableSpy = jest.spyOn(cache, 'isFeatureAvailable');
