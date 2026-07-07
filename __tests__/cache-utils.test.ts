@@ -247,3 +247,62 @@ describe('isGhes', () => {
     expect(cacheUtils.isGhes()).toBeTruthy();
   });
 });
+
+describe('getGoVersion', () => {
+  let getExecOutputSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    getExecOutputSpy = jest.spyOn(exec, 'getExecOutput');
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('parses the installed version from `go version` output', async () => {
+    getExecOutputSpy.mockImplementation(() => {
+      return Promise.resolve({
+        exitCode: 0,
+        stdout: 'go version go1.9.7 linux/amd64',
+        stderr: ''
+      });
+    });
+
+    await expect(cacheUtils.getGoVersion()).resolves.toBe('1.9.7');
+  });
+
+  it('returns an empty string when the version token is unexpected', async () => {
+    getExecOutputSpy.mockImplementation(() => {
+      return Promise.resolve({
+        exitCode: 0,
+        stdout: 'unexpected output',
+        stderr: ''
+      });
+    });
+
+    await expect(cacheUtils.getGoVersion()).resolves.toBe('');
+  });
+});
+
+describe('isCacheSupported', () => {
+  it.each(['1.9.7', '1.8', '1.9'])(
+    'returns false for Go versions before 1.10 (%s)',
+    version => {
+      expect(cacheUtils.isCacheSupported(version)).toBe(false);
+    }
+  );
+
+  it.each(['1.10.0', '1.10', '1.21.3', '1.25.0'])(
+    'returns true for Go versions 1.10 and later (%s)',
+    version => {
+      expect(cacheUtils.isCacheSupported(version)).toBe(true);
+    }
+  );
+
+  it.each(['', 'not-a-version', 'go'])(
+    'returns true when the version cannot be parsed (%s)',
+    version => {
+      expect(cacheUtils.isCacheSupported(version)).toBe(true);
+    }
+  );
+});

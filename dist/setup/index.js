@@ -51976,6 +51976,11 @@ const fs_1 = __importDefault(__nccwpck_require__(79896));
 const constants_1 = __nccwpck_require__(27242);
 const cache_utils_1 = __nccwpck_require__(4673);
 const restoreCache = (versionSpec, packageManager, cacheDependencyPath) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!(0, cache_utils_1.isCacheSupported)(versionSpec)) {
+        core.setOutput(constants_1.Outputs.CacheHit, false);
+        core.info(`Dependency caching is not supported for Go versions before ${cache_utils_1.MINIMUM_GO_VERSION_FOR_CACHE}. Skipping cache restore.`);
+        return;
+    }
     const packageManagerInfo = yield (0, cache_utils_1.getPackageManagerInfo)(packageManager);
     const platform = process.env.RUNNER_OS;
     const arch = process.arch;
@@ -52064,13 +52069,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCacheDirectoryPath = exports.getPackageManagerInfo = exports.getCommandOutput = void 0;
+exports.getCacheDirectoryPath = exports.isCacheSupported = exports.getGoVersion = exports.getPackageManagerInfo = exports.getCommandOutput = exports.MINIMUM_GO_VERSION_FOR_CACHE = void 0;
 exports.isGhes = isGhes;
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 const cache = __importStar(__nccwpck_require__(5116));
 const core = __importStar(__nccwpck_require__(37484));
 const exec = __importStar(__nccwpck_require__(95236));
+const semver = __importStar(__nccwpck_require__(62088));
 const package_managers_1 = __nccwpck_require__(80772);
+// Build and dependency caching rely on `go env GOCACHE`/`GOMODCACHE`.
+// GOCACHE was introduced in Go 1.10, so older versions expose neither cache
+// directory; `go env` returns empty output for both variables. Caching is
+// therefore unsupported (and meaningless) for Go versions before 1.10.
+exports.MINIMUM_GO_VERSION_FOR_CACHE = '1.10.0';
 const getCommandOutput = (toolCommand) => __awaiter(void 0, void 0, void 0, function* () {
     let { stdout, stderr, exitCode } = yield exec.getExecOutput(toolCommand, undefined, { ignoreReturnCode: true });
     if (exitCode) {
@@ -52090,6 +52101,30 @@ const getPackageManagerInfo = (packageManager) => __awaiter(void 0, void 0, void
     return obtainedPackageManager;
 });
 exports.getPackageManagerInfo = getPackageManagerInfo;
+/**
+ * Returns the installed Go version (e.g. "1.9.7") by parsing `go version`.
+ * Example output: "go version go1.9.7 linux/amd64".
+ */
+const getGoVersion = () => __awaiter(void 0, void 0, void 0, function* () {
+    const versionOutput = yield (0, exports.getCommandOutput)('go version');
+    const versionToken = versionOutput.split(' ')[2];
+    return (versionToken === null || versionToken === void 0 ? void 0 : versionToken.startsWith('go')) ? versionToken.slice('go'.length) : '';
+});
+exports.getGoVersion = getGoVersion;
+/**
+ * Determines whether the installed Go version supports build/dependency
+ * caching. Go versions before 1.10 don't expose GOCACHE/GOMODCACHE, so
+ * caching should be skipped for them without emitting warnings.
+ */
+const isCacheSupported = (goVersion) => {
+    const coercedVersion = semver.coerce(goVersion);
+    // If the version can't be parsed, don't block caching.
+    if (!coercedVersion) {
+        return true;
+    }
+    return semver.gte(coercedVersion, exports.MINIMUM_GO_VERSION_FOR_CACHE);
+};
+exports.isCacheSupported = isCacheSupported;
 const getCacheDirectoryPath = (packageManagerInfo) => __awaiter(void 0, void 0, void 0, function* () {
     const pathOutputs = yield Promise.allSettled(packageManagerInfo.cacheFolderCommandList.map((command) => __awaiter(void 0, void 0, void 0, function* () { return (0, exports.getCommandOutput)(command); })));
     const results = pathOutputs.map(item => {

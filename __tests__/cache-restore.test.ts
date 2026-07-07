@@ -13,6 +13,7 @@ describe('restoreCache', () => {
   let restoreCacheSpy: jest.SpyInstance;
   let infoSpy: jest.SpyInstance;
   let setOutputSpy: jest.SpyInstance;
+  let warningSpy: jest.SpyInstance;
 
   const versionSpec = '1.13.1';
   const packageManager = 'default';
@@ -29,6 +30,7 @@ describe('restoreCache', () => {
     restoreCacheSpy = jest.spyOn(cache, 'restoreCache');
     infoSpy = jest.spyOn(core, 'info');
     setOutputSpy = jest.spyOn(core, 'setOutput');
+    warningSpy = jest.spyOn(core, 'warning');
 
     getCacheDirectoryPathSpy.mockImplementation(
       (PackageManager: PackageManagerInfo) => {
@@ -98,5 +100,22 @@ describe('restoreCache', () => {
     ).rejects.toThrow(
       'Dependencies file is not found in /test/workspace. Supported file pattern: go.mod'
     );
+  });
+
+  it('should skip cache restore for Go versions before 1.10', async () => {
+    // Act
+    await cacheRestore.restoreCache(
+      '1.9.7',
+      packageManager,
+      cacheDependencyPath
+    );
+
+    // Assert
+    expect(setOutputSpy).toHaveBeenCalledWith('cache-hit', false);
+    expect(infoSpy).toHaveBeenCalledWith(
+      'Dependency caching is not supported for Go versions before 1.10.0. Skipping cache restore.'
+    );
+    expect(getCacheDirectoryPathSpy).not.toHaveBeenCalled();
+    expect(warningSpy).not.toHaveBeenCalled();
   });
 });

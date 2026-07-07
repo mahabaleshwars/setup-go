@@ -20,6 +20,7 @@ describe('cache-save', () => {
   let setFailedSpy: jest.SpyInstance;
   let saveCacheSpy: jest.SpyInstance;
   let getCacheDirectoryPathSpy: jest.SpyInstance;
+  let getGoVersionSpy: jest.SpyInstance;
   let existsSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -60,6 +61,9 @@ describe('cache-save', () => {
       Promise.resolve(['cache_directory_path', 'cache_directory_path'])
     );
 
+    getGoVersionSpy = jest.spyOn(cacheUtils, 'getGoVersion');
+    getGoVersionSpy.mockImplementation(() => Promise.resolve('1.21.3'));
+
     existsSpy = jest.spyOn(fs, 'existsSync');
     existsSpy.mockImplementation(() => true);
   });
@@ -73,6 +77,20 @@ describe('cache-save', () => {
 
     await run();
 
+    expect(saveCacheSpy).not.toHaveBeenCalled();
+    expect(warningSpy).not.toHaveBeenCalled();
+    expect(setFailedSpy).not.toHaveBeenCalled();
+  });
+
+  it('skips cache save for Go versions before 1.10', async () => {
+    getGoVersionSpy.mockImplementation(() => Promise.resolve('1.9.7'));
+
+    await run();
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      'Dependency caching is not supported for Go versions before 1.10.0. Skipping cache save.'
+    );
+    expect(getCacheDirectoryPathSpy).not.toHaveBeenCalled();
     expect(saveCacheSpy).not.toHaveBeenCalled();
     expect(warningSpy).not.toHaveBeenCalled();
     expect(setFailedSpy).not.toHaveBeenCalled();
